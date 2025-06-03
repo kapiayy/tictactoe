@@ -27,8 +27,8 @@ const gameBoard = (function () {
             return false
         }
         else{
-            board[row][col] = currentPlayer.getPlayer().playerSign
-           return true
+            board[row][col] = currentPlayer.sign
+            return true
             }
     }
     
@@ -39,26 +39,11 @@ const gameBoard = (function () {
     
 
 
-function createPlayer(name,sign){ // funkcja tworzaca gracza 
-
-    const playerName = "@" + name // przypisuje nazwe w zaleznosci jaka sie wybierze
-    const playerSign = sign // przepisuje znak ktorego uzywa osoba
-    
-    
-    function getPlayer(){ // funkcja ktora zwraca parametry obiektu
-        return { playerName , playerSign}
-    }
-    return { getPlayer } // nadaje stworzonym property getPlayer , dzieki ktoremu mozna uzyc getPlayer np kapi.getPlayer(),
-                            // !!!!!!!! nie da sie wyciagnac playerName, bo to wartosc prywatna , dlatego to robimy !!!!!!!
-}
 
 
  
 const game = (function gameController(){
-    const player1 = createPlayer(`kapi`,'x')
-    const player2 = createPlayer('niger','o')
-    currentPlayer = player1
-    sign = currentPlayer.getPlayer().playerSign
+    
     
     function switchPlayers(){
         
@@ -66,7 +51,17 @@ const game = (function gameController(){
         
     }
 
-   
+    function createPlayer(name,sign){ 
+        return {
+            name: name,
+            sign: sign
+        }
+    }
+    
+    const player1 = createPlayer(`kapi`,'x')
+    const player2 = createPlayer('niger','o')
+    currentPlayer = player1
+    sign = currentPlayer.sign
 
     function renderBoard(){
         return gameBoard.getBoard()
@@ -76,14 +71,22 @@ const game = (function gameController(){
     function move(cords){ 
         const success = gameBoard.setValue(cords,currentPlayer)
         if(!success){
-            return{error: 'Spot Taken', board: renderBoard(),turn: currentPlayer.getPlayer().playerSign, player: currentPlayer.getPlayer().playerName }
+            return{error: 'Spot Taken', board: renderBoard(),turn: currentPlayer.sign, player: currentPlayer.name }
         }else  if(checkWin()){
-            return { board: renderBoard(), winner: currentPlayer.getPlayer().playerName };
-        }else{
+            return { board: renderBoard(), result: currentPlayer.name };
+        }else if(!checkWin() && checkTie()){
+            
+            return {
+                board:renderBoard() , result :'It"s a tie'
+            }
+        }
+        
+        
+        else{
         switchPlayers()
         // if checkwin goes console log win if not the nswtich players
         
-        return{ board:gameBoard.getBoard(),turn: currentPlayer.getPlayer().playerSign, player: currentPlayer.getPlayer().playerName
+        return{ board:renderBoard(),turn: currentPlayer.sign, player: currentPlayer.name
             
         }
         
@@ -91,15 +94,15 @@ const game = (function gameController(){
     }
     
     function checkWin() {
-        board = gameBoard.getBoard()
-        const sign = currentPlayer.getPlayer().playerSign
+        board = renderBoard()
+        const sign = currentPlayer.sign
         
         for(let i = 0 ; i < 3; i++){
             if(board[i][0] === sign && board[i][1] === sign && board[i][2] === sign){
-                console.log(`${currentPlayer.getPlayer().playerName}` + " Wins!")
+                console.log(`${currentPlayer.name}` + " Wins!")
                 return true
             }else if(board[0][i] === sign && board[1][i] === sign && board[2][i] === sign){
-                console.log(`${currentPlayer.getPlayer().playerName}` + " Wins!")
+                console.log(`${currentPlayer.name}` + " Wins!")
                 return true
             }
 
@@ -108,18 +111,37 @@ const game = (function gameController(){
             }
 
             else if (board[0][2] === sign && board[1][1] === sign && board[2][0] === sign) {
-             console.log(`${currentPlayer.getPlayer().playerName} Wins!`);
+             console.log(`${currentPlayer.name} Wins!`);
                 return true;
-             }   
+            } 
             }
        
-        return false
-        
+        return false 
         
     }
+    function checkTie(){
+        let isFull = true
+        board = renderBoard()
+        for(let i =0; i < 3; i++){
+            for(let j = 0 ; j < 3; j++){
+        if(board[i][j] !== 'x' && board[i][j] !== 'o'){
+            isFull = false
+            break
+                }
+            }
+        }
+        if(isFull){
+            
+            return true
+        }else return false
+             
+    }           
+    
+           
+       
                 
     return {
-        renderBoard , move , checkWin , switchPlayers
+        renderBoard , move , checkWin , switchPlayers, createPlayer,checkTie
     }
     
 })()
@@ -138,40 +160,86 @@ const game = (function gameController(){
 // HTML STYLING
 
 
-const boxes = document.querySelectorAll(".box");
-const container = document.querySelector(".container")
-
-boxes.forEach((box,index) => box.addEventListener("click", () => {
-    if(game.checkWin()){
-        return true
-    }
-    if(box.hasChildNodes()){
-       return  console.log('nlaicenwck')
-    }else
+const webGame = (function gameRenderer(){
+    changeColor()
+   
+    const boxes = document.querySelectorAll(".box")
+    function placeSign(){
     
+    let gameOver = false
+    
+    
+    boxes.forEach((box,index) => box.addEventListener("click", (e) => {
     index +=1
+    if(gameOver){
+        return
+    }
     const circle = document.createElement("div")
     circle.classList.add("circle")
     const cross = document.createElement("div")
     cross.classList.add("cross")
-    cross.textContent = 'cross'
-    circle.textContent = 'circle'
-    if(currentPlayer.getPlayer().playerSign === 'o'){
-        box.appendChild(circle)
+    if(box.hasChildNodes()){
+       return  
     }
-    else box.appendChild(cross)
+    if(currentPlayer.sign === 'o'){
+        box.appendChild(circle)
+    }   else 
+    box.appendChild(cross)
+    
     const result = game.move(index)
-    console.log(currentPlayer.getPlayer().playerSign)
+    if(game.checkWin() || game.checkTie()){
+        gameOver = true
+    }
+    console.log(result) 
     
-    console.log(result)
     
     
     
+    
+    }))
+    
+}
+    
+    function placeText(){
+        const turnText = document.createElement("div")
+        turnText.textContent = `${currentPlayer.name}'s turn`
+        turnText.classList.add("turn-text")
+        const winnerText = document.createElement("div")
+        const textContainer = document.querySelector(".text-container")
         
-    
-    
-    
-    
-   
-}))
 
+
+        textContainer.appendChild(turnText)
+        
+        boxes.forEach((box) => box.addEventListener("click", () => {
+        turnText.textContent = `${currentPlayer.name}'s turn`
+        if(game.checkWin()){
+            textContainer.appendChild(winnerText)
+            winnerText.textContent = `${currentPlayer.name} is a winner!`
+            turnText.textContent = ''
+        }
+        }))
+        
+    }
+    function changeColor(){
+        if(currentPlayer.sign === 'o'){
+            console.log('working')
+           console.log('black')
+        }
+    }
+    function init(){
+        placeSign()
+        placeText()
+        changeColor()
+    }
+
+    return{
+        placeSign, placeText, changeColor, init
+    }
+
+})()
+
+document.addEventListener('DOMContentLoaded', () => {
+  webGame.init()
+  
+});
