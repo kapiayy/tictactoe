@@ -1,4 +1,4 @@
-const gameBoard = (function () {
+const gameBoard = (function gameboard() {
     const rows = 3
     const columns = 3
     const board = []
@@ -73,9 +73,12 @@ const game = (function gameController(){
         if(!success){
             return{error: 'Spot Taken', board: renderBoard(),turn: currentPlayer.sign, player: currentPlayer.name }
         }else  if(checkWin()){
+            
+           
+             
             return { board: renderBoard(), result: currentPlayer.name };
         }else if(!checkWin() && checkTie()){
-            
+           
             return {
                 board:renderBoard() , result :'It"s a tie'
             }
@@ -94,6 +97,7 @@ const game = (function gameController(){
     }
     
     function checkWin() {
+       
         board = renderBoard()
         const sign = currentPlayer.sign
         
@@ -135,13 +139,24 @@ const game = (function gameController(){
             return true
         }else return false
              
-    }           
+    }      
+     function resetGame(){
+        
+        board = renderBoard()
+        let inc = 1
+        for(let i = 0; i < 3; i++){
+            board[i] = []
+            for(let j = 0; j < 3; j++){
+                board[i][j] = inc
+                inc++
+        }}
+     }
     
            
        
                 
     return {
-        renderBoard , move , checkWin , switchPlayers, createPlayer,checkTie
+        renderBoard , move , checkWin , switchPlayers, createPlayer,checkTie,resetGame
     }
     
 })()
@@ -161,9 +176,15 @@ const game = (function gameController(){
 
 
 const webGame = (function gameRenderer(){
-    changeColor()
-   
+    const turnText = document.createElement("div")
+    const textContainer = document.querySelector(".text-container")
+    const winnerText = document.createElement("div")
+    winnerText.classList.add("winner-text")
     const boxes = document.querySelectorAll(".box")
+    const resetbutton = document.createElement("button")
+    resetbutton.classList.add("reset-button")
+    resetbutton.textContent = ' reset '
+    
     function placeSign(){
     
     let gameOver = false
@@ -172,7 +193,7 @@ const webGame = (function gameRenderer(){
     boxes.forEach((box,index) => box.addEventListener("click", (e) => {
     index +=1
     if(gameOver){
-        return
+        return 
     }
     const circle = document.createElement("div")
     circle.classList.add("circle")
@@ -183,16 +204,19 @@ const webGame = (function gameRenderer(){
     }
     if(currentPlayer.sign === 'o'){
         box.appendChild(circle)
+        box.style.setProperty("--selection-background","#FF0000")
     }   else 
     box.appendChild(cross)
     
     const result = game.move(index)
     if(game.checkWin() || game.checkTie()){
         gameOver = true
+        resetGameDOM()
+        
     }
     console.log(result) 
     
-    
+   
     
     
     
@@ -201,11 +225,12 @@ const webGame = (function gameRenderer(){
 }
     
     function placeText(){
-        const turnText = document.createElement("div")
+        
         turnText.textContent = `${currentPlayer.name}'s turn`
         turnText.classList.add("turn-text")
-        const winnerText = document.createElement("div")
-        const textContainer = document.querySelector(".text-container")
+         
+        
+      
         
 
 
@@ -218,23 +243,61 @@ const webGame = (function gameRenderer(){
             winnerText.textContent = `${currentPlayer.name} is a winner!`
             turnText.textContent = ''
         }
+        else if(game.checkTie()){
+            textContainer.appendChild(winnerText)
+            winnerText.textContent = `It's a tie!`
+            
+        }
         }))
         
     }
     function changeColor(){
-        if(currentPlayer.sign === 'o'){
-            console.log('working')
-           console.log('black')
-        }
+        boxes.forEach((box) => {
+            
+            box.addEventListener("mouseover", () =>{
+                if(currentPlayer.sign === 'o'){
+                box.style.backgroundColor = "#cc0000"
+
+                }else box.style.backgroundColor = "blue"
+            })
+            box.addEventListener("mouseout", () =>{
+                box.style.backgroundColor = "white"
+            })
+        }) 
     }
+    function resetGameDOM(){
+          
+            
+            textContainer.appendChild(resetbutton)
+            
+            resetbutton.onclick = function(){
+                turnText.textContent = `${currentPlayer.name}'s turn` 
+                winnerText.textContent = ''
+                textContainer.removeChild(resetbutton)
+                boxes.forEach((box) => {
+                    box.innerHTML = ''
+                    
+                })
+                
+                game.resetGame()
+                webGame.init()
+                gameOver = false
+                
+               
+                
+            }
+            
+    }
+
     function init(){
         placeSign()
         placeText()
         changeColor()
+       
     }
 
     return{
-        placeSign, placeText, changeColor, init
+        placeSign, placeText, changeColor, init, resetGameDOM
     }
 
 })()
